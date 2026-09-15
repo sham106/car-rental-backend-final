@@ -1,0 +1,18 @@
+-- First create/confirm the user under Supabase Authentication > Users.
+-- Replace the email/name below, then run as project owner. No password goes in SQL.
+do $$
+declare admin_id uuid;
+begin
+    select id into admin_id from auth.users
+    where lower(email) = lower('YOUR_ADMIN_EMAIL') and email_confirmed_at is not null;
+    if admin_id is null then
+        raise exception 'Create and confirm the Supabase Auth user first';
+    end if;
+    insert into public.admin_memberships (user_id, display_name, role)
+    values (admin_id, 'YOUR_ADMIN_NAME', 'super_admin')
+    on conflict (user_id) do update
+        set display_name = excluded.display_name, role = excluded.role, is_active = true;
+end;
+$$;
+-- To revoke access immediately on the next API request:
+-- update public.admin_memberships set is_active = false where user_id = 'USER_UUID';

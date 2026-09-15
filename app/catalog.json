@@ -1,0 +1,117 @@
+{
+  "locations": [
+    {
+      "id": "airport-mru",
+      "name": "SSR International Airport (MRU)",
+      "area": "South / Airport",
+      "pickupFee": 0,
+      "dropoffFee": 0,
+      "address": "Terminal 1 Arrivals Hall & Dedicated Car Park P2, Plaine Magnien",
+      "isPopular": true
+    },
+    {
+      "id": "grand-baie-hub",
+      "name": "Grand Baie / North Coast Hub",
+      "area": "North",
+      "pickupFee": 0,
+      "dropoffFee": 0,
+      "address": "Sunset Boulevard & Coastal Road, Grand Baie",
+      "isPopular": true
+    },
+    {
+      "id": "flic-en-flac-hub",
+      "name": "Flic-en-Flac / West Coast Hub",
+      "area": "West",
+      "pickupFee": 0,
+      "dropoffFee": 0,
+      "address": "Royal Road, Flic-en-Flac (Near Villa Caroline)",
+      "isPopular": true
+    },
+    {
+      "id": "port-louis-hub",
+      "name": "Port Louis Harbour & City Center",
+      "area": "Central / Capital",
+      "pickupFee": 0,
+      "dropoffFee": 0,
+      "address": "Caudan Waterfront Marina, Port Louis",
+      "isPopular": true
+    },
+    {
+      "id": "belle-mare-east",
+      "name": "Belle Mare / East Coast Resorts",
+      "area": "East",
+      "pickupFee": 300,
+      "dropoffFee": 300,
+      "address": "Coastal Highway, Belle Mare (Resort Drop-off Service)",
+      "isPopular": false
+    },
+    {
+      "id": "le-morne-southwest",
+      "name": "Le Morne Peninsula & Black River",
+      "area": "South West",
+      "pickupFee": 300,
+      "dropoffFee": 300,
+      "address": "Le Morne Village & Hotel Zones, Black River",
+      "isPopular": false
+    },
+    {
+      "id": "hotel-delivery-islandwide",
+      "name": "Hotel / Villa Direct Delivery (Island-wide)",
+      "area": "Island-wide",
+      "pickupFee": 450,
+      "dropoffFee": 450,
+      "address": "Direct to your hotel concierge or holiday villa across Mauritius",
+      "isPopular": true
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-economy",
+      "slug": "economy",
+      "name": "Economy",
+      "tagline": "Agile & fuel-efficient for coastal discovery",
+      "description": "Perfect for couples and solo adventurers exploring Mauritius winding coastal roads and vibrant villages with effortless parking.",
+      "representativePhoto": "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=900&q=80"
+    },
+    {
+      "id": "cat-compact",
+      "slug": "compact",
+      "name": "Compact",
+      "tagline": "Extra comfort with nimble handling",
+      "description": "Generous cabin space and modern multimedia systems, well suited for small families navigating both town traffic and scenic drives.",
+      "representativePhoto": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=900&q=80"
+    },
+    {
+      "id": "cat-sedan",
+      "slug": "sedan",
+      "name": "Sedan",
+      "tagline": "Smooth cruising and expansive trunk capacity",
+      "description": "Refined road dampening and spacious seating for 5 adults with full luggage capacity for airport transfers and island-wide touring.",
+      "representativePhoto": "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=900&q=80"
+    },
+    {
+      "id": "cat-suv",
+      "slug": "suv",
+      "name": "SUV & Crossover",
+      "tagline": "Elevated seating position & all-terrain poise",
+      "description": "High road clearance and strong torque for visiting Chamarel mountain passes, tea plantations, and secluded coastal viewpoints.",
+      "representativePhoto": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=900&q=80"
+    },
+    {
+      "id": "cat-premium",
+      "slug": "premium",
+      "name": "Premium",
+      "tagline": "Refined executive luxury and serene comfort",
+      "description": "Prestige German craftsmanship with bespoke leather interiors, acoustic privacy, and seamless executive styling for discerning travelers.",
+      "representativePhoto": "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=900&q=80"
+    },
+    {
+      "id": "cat-van",
+      "slug": "van",
+      "name": "Van & 7-Seater",
+      "tagline": "Spacious group and multi-family convenience",
+      "description": "Configurable 7 to 10 passenger seating with dual air-conditioning zones, ensuring everyone travels together in cool comfort.",
+      "representativePhoto": "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=900&q=80"
+    }
+  ]
+}
