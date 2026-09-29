@@ -59,7 +59,7 @@ class VehicleInput(Input):
     registrationNumber: Name
     brand: Name
     model: Name
-    year: int = Field(ge=1950, le=2100)
+    year: int | None = Field(default=None, ge=1950, le=2100)
     color: Text = ""
     vin: Text = ""
     engineNumber: Text = ""
