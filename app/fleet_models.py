@@ -155,6 +155,13 @@ class ComplianceInput(Input):
         return value
 
 
+class DocumentComplianceInput(Input):
+    company: Text = ""
+    broker: Text = ""
+    policyNumber: Text = ""
+    premium: Money = 0
+
+
 class DocumentInput(Input):
     vehicleId: Name
     documentType: Literal[
@@ -172,6 +179,7 @@ class DocumentInput(Input):
     issueDate: date | None = None
     expiryDate: date | None = None
     fileId: Name
+    compliance: DocumentComplianceInput | None = None
     notes: Text = ""
 
 

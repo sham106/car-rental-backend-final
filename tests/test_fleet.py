@@ -657,3 +657,64 @@ def test_webhook_failures_keep_event_for_retry(fleet):
     assert requests[0].headers["Idempotency-Key"] == event["id"]
     assert len(requests[0].headers["X-Oceane-Signature"]) == 64
     assert len(store.state["bookings"]) == 1
+
+
+@pytest.mark.parametrize(
+    "document_type,compliance_type",
+    [
+        ("Insurance Certificate", "Insurance"),
+        ("Fitness Certificate", "Fitness Certificate"),
+        ("MVL", "MVL"),
+        ("Licence", "Licence"),
+    ],
+)
+def test_certification_upload_saves_linked_compliance_atomically(
+    fleet, document_type, compliance_type
+):
+    client, store, _ = fleet
+    vehicle = seed(client)
+    uploaded = post(
+        client,
+        "/admin/files",
+        {
+            "kind": "document",
+            "name": "certificate.pdf",
+            "contentType": "application/pdf",
+            "content": base64.b64encode(b"%PDF-1.4\n%%EOF").decode(),
+        },
+    )
+    payload = {
+        "vehicleId": vehicle["id"],
+        "title": "Certification",
+        "documentType": document_type,
+        "fileId": uploaded["id"],
+        "issueDate": "2026-01-01",
+        "expiryDate": "2027-01-01",
+        "compliance": {
+            "company": "Insurer",
+            "broker": "Broker",
+            "policyNumber": "POL-42",
+            "premium": 12345.67,
+        },
+    }
+    before = deepcopy(store.state)
+    bad = client.post("/api/admin/records/documents", json={**payload, "expiryDate": ""})
+    assert bad.status_code == 422
+    assert store.state == before
+    bad = client.post(
+        "/api/admin/records/documents", json={**payload, "compliance": {"premium": -1}}
+    )
+    assert bad.status_code == 422
+    assert store.state == before
+    row = post(client, "/admin/records/documents", payload)
+    record = store.state["compliance"][row["complianceId"]]
+    assert record["vehicleId"] == vehicle["id"]
+    assert record["complianceType"] == compliance_type
+    assert record["company"] == "Insurer"
+    assert record["broker"] == "Broker"
+    assert record["policyNumber"] == "POL-42"
+    assert record["premium"] == 12345.67
+    assert record["documentUrl"] == "/api/admin/files/" + uploaded["id"]
+    assert client.get(record["documentUrl"]).status_code == 200
+    client.cookies.clear()
+    assert client.get(record["documentUrl"]).status_code == 401

@@ -440,6 +440,31 @@ def write_resource(state, actor, resource, payload, key=None):
         ):
             fail("Expiry must be on or after issue date.")
         data.update(fileSize=f"{file['size'] / 1024:.1f} KB", uploadedAt=now())
+        certification = data.pop("compliance", None)
+        if certification is not None:
+            compliance_type = {
+                "Insurance Certificate": "Insurance",
+                "Fitness Certificate": "Fitness Certificate",
+                "MVL": "MVL",
+                "Licence": "Licence",
+            }.get(data["documentType"])
+            if not compliance_type or not data.get("issueDate") or not data.get("expiryDate"):
+                fail("Compliance documents require a supported type, issue date and expiry date.")
+            record = write_resource(
+                state,
+                actor,
+                "compliance",
+                {
+                    **certification,
+                    "vehicleId": data["vehicleId"],
+                    "complianceType": compliance_type,
+                    "issueDate": data["issueDate"],
+                    "expiryDate": data["expiryDate"],
+                    "documentUrl": f"/api/admin/files/{data['fileId']}",
+                    "notes": data.get("notes", ""),
+                },
+            )
+            data["complianceId"] = record["id"]
     row = new_record(state, resource, data, key) if not key else old
     if key:
         row.update(data)
