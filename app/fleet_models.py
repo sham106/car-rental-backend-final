@@ -195,6 +195,9 @@ class SettingsInput(Input):
     hotelDeliveryFee: Money = 450
     serviceIntervalKm: int = Field(default=10000, ge=100, le=100000)
     complianceNoticeDays: int = Field(default=30, ge=1, le=365)
+    serviceNoticeDays: int = Field(default=14, ge=1, le=365)
+    serviceNoticeKm: int = Field(default=1500, ge=0, le=100000)
+    returnNoticeDays: int = Field(default=1, ge=0, le=30)
     currencySymbol: Literal["Rs (MUR)"] = "Rs (MUR)"
     vatRate: float = Field(default=15, ge=0, le=100)
 

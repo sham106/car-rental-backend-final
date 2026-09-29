@@ -603,10 +603,13 @@ def test_compliance_alert_acknowledgement_is_persistent(fleet):
         },
     )
     rows = client.get("/api/admin/records/notifications").json()["items"]
-    assert len(rows) == 1
-    assert rows[0]["read"] is False
-    post(client, "/admin/notifications/read", {"id": rows[0]["id"]})
-    assert client.get("/api/admin/records/notifications").json()["items"][0]["read"] is True
+    expiry = next(row for row in rows if row["id"].startswith("expiry:"))
+    assert expiry["read"] is False
+    post(client, "/admin/notifications/read", {"id": expiry["id"]})
+    remaining = client.get("/api/admin/records/notifications").json()["items"]
+    acknowledged = next(row for row in remaining if row["id"] == expiry["id"])
+    assert acknowledged["read"] is True
+    assert acknowledged["requiresAction"] is True
 
 
 def test_xlsx_import_parses_actual_cells(fleet):
@@ -774,3 +777,55 @@ def test_historical_service_updates_schedule_without_decreasing_odometer(fleet):
     )
     assert response.status_code == 422
     assert store.state == before
+
+
+def test_insurance_renewal_retains_previous_details_and_uploaded_files(fleet):
+    client, store, _ = fleet
+    vehicle = seed(client)
+    saved = []
+    for number, issue, expiry, premium in [
+        ("OLD-POLICY", "2025-01-01", "2026-01-01", 12000),
+        ("NEW-POLICY", "2026-01-01", "2027-01-01", 13500),
+    ]:
+        uploaded = post(
+            client,
+            "/admin/files",
+            {
+                "kind": "document",
+                "name": number + ".pdf",
+                "contentType": "application/pdf",
+                "content": base64.b64encode(b"%PDF-1.4\n%%EOF").decode(),
+            },
+        )
+        document = post(
+            client,
+            "/admin/records/documents",
+            {
+                "vehicleId": vehicle["id"],
+                "documentType": "Insurance Certificate",
+                "title": number,
+                "fileId": uploaded["id"],
+                "issueDate": issue,
+                "expiryDate": expiry,
+                "compliance": {
+                    "company": "Insurer " + number,
+                    "broker": "Broker " + number,
+                    "policyNumber": number,
+                    "premium": premium,
+                },
+            },
+        )
+        saved.append((document, uploaded, number, premium))
+    assert len(store.state["compliance"]) == 2
+    assert len(store.state["documents"]) == 2
+    overview = client.get("/api/admin/data").json()
+    assert len(overview["compliance"]) == 2
+    assert len(overview["documents"]) == 2
+    for document, uploaded, number, premium in saved:
+        policy = next(c for c in overview["compliance"] if c["id"] == document["complianceId"])
+        assert policy["policyNumber"] == number
+        assert policy["company"] == "Insurer " + number
+        assert policy["broker"] == "Broker " + number
+        assert policy["premium"] == premium
+        assert policy["documentUrl"] == "/api/admin/files/" + uploaded["id"]
+        assert client.get(policy["documentUrl"]).status_code == 200
