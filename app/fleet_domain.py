@@ -415,17 +415,30 @@ def write_resource(state, actor, resource, payload, key=None):
     elif resource == "maintenance":
         if data["date"] > today():
             fail("Completed service cannot be in the future. Use a hold for planned work.")
+        if (
+            data.get("nextServiceMileage") is not None
+            and data["nextServiceMileage"] <= data["mileage"]
+        ):
+            fail("Next service mileage must be greater than the service mileage.")
+        if data.get("nextServiceDate") and data["nextServiceDate"] <= data["date"]:
+            fail("Next service date must be after the completed service date.")
         data["totalCost"] = money(
             Decimal(str(data["partsCost"])) + Decimal(str(data["labourCost"]))
         )
-        if data["mileage"] >= vehicle["mileage"]:
-            vehicle["mileage"] = data["mileage"]
-            vehicle["nextServiceMileage"] = data.get(
-                "nextServiceMileage", data["mileage"] + settings(state)["serviceIntervalKm"]
+        latest = max(
+            (r for r in state["maintenance"].values() if r["vehicleId"] == data["vehicleId"]),
+            key=lambda r: (r["date"], r["mileage"]),
+            default=None,
+        )
+        vehicle["mileage"] = max(vehicle["mileage"], data["mileage"])
+        if latest is None or (data["date"], data["mileage"]) >= (latest["date"], latest["mileage"]):
+            vehicle["nextServiceMileage"] = (
+                data["nextServiceMileage"]
+                if data.get("nextServiceMileage") is not None
+                else data["mileage"] + settings(state)["serviceIntervalKm"]
             )
-            if data.get("nextServiceDate"):
-                vehicle["nextServiceDate"] = data["nextServiceDate"]
-            touch(vehicle)
+            vehicle["nextServiceDate"] = data.get("nextServiceDate")
+        touch(vehicle)
     elif resource == "compliance":
         if data["expiryDate"] < data["issueDate"]:
             fail("Expiry must be on or after the issue date.")
@@ -450,6 +463,10 @@ def write_resource(state, actor, resource, payload, key=None):
             }.get(data["documentType"])
             if not compliance_type or not data.get("issueDate") or not data.get("expiryDate"):
                 fail("Compliance documents require a supported type, issue date and expiry date.")
+            if compliance_type == "Insurance" and (
+                not certification.get("company") or not certification.get("policyNumber")
+            ):
+                fail("Insurance certificates require an insurance company and policy number.")
             record = write_resource(
                 state,
                 actor,

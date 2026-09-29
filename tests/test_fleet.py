@@ -254,6 +254,9 @@ def test_checkin_checkout_atomic_odometer_and_state(fleet):
         client, f"/admin/bookings/{row['id']}/checkout", {"mileageOut": 110, "fuelLevelOut": "Full"}
     )
     assert store.state["vehicles"][vehicle["id"]]["operationalStatus"] == "rented"
+    checked_out_at = store.state["bookings"][row["id"]]["checkedOutAt"]
+    assert checked_out_at
+    assert not store.state["bookings"][row["id"]].get("checkedInAt")
     assert (
         client.post(f"/api/admin/bookings/{row['id']}/cancel", json={"reason": "test"}).status_code
         == 409
@@ -278,6 +281,9 @@ def test_checkin_checkout_atomic_odometer_and_state(fleet):
     assert store.state["vehicles"][vehicle["id"]]["mileage"] == 200
     assert store.state["vehicles"][vehicle["id"]]["operationalStatus"] == "in_service"
     assert store.state["bookings"][row["id"]]["bookingStatus"] == "completed"
+    assert store.state["bookings"][row["id"]]["checkedInAt"] >= checked_out_at
+    assert store.state["bookings"][row["id"]]["pickupDate"] == row["pickupDate"]
+    assert store.state["bookings"][row["id"]]["returnDate"] == row["returnDate"]
 
 
 def test_terminal_booking_cannot_be_revived(fleet):
@@ -718,3 +724,53 @@ def test_certification_upload_saves_linked_compliance_atomically(
     assert client.get(record["documentUrl"]).status_code == 200
     client.cookies.clear()
     assert client.get(record["documentUrl"]).status_code == 401
+
+
+def test_historical_service_updates_schedule_without_decreasing_odometer(fleet):
+    client, store, _ = fleet
+    vehicle = seed(client)
+    post(
+        client,
+        "/admin/records/maintenance",
+        {
+            "vehicleId": vehicle["id"],
+            "serviceType": "Routine Service",
+            "date": today(),
+            "mileage": 90,
+            "garage": "Garage",
+            "description": "Previous service entered during onboarding",
+            "nextServiceMileage": 9000,
+        },
+    )
+    saved = store.state["vehicles"][vehicle["id"]]
+    assert saved["mileage"] == 100
+    assert saved["nextServiceMileage"] == 9000
+    post(
+        client,
+        "/admin/records/maintenance",
+        {
+            "vehicleId": vehicle["id"],
+            "serviceType": "Routine Service",
+            "date": (date.fromisoformat(today()) - timedelta(days=90)).isoformat(),
+            "mileage": 50,
+            "garage": "Old Garage",
+            "nextServiceMileage": 5000,
+        },
+    )
+    saved = store.state["vehicles"][vehicle["id"]]
+    assert saved["mileage"] == 100
+    assert saved["nextServiceMileage"] == 9000
+    before = deepcopy(store.state)
+    response = client.post(
+        "/api/admin/records/maintenance",
+        json={
+            "vehicleId": vehicle["id"],
+            "serviceType": "Routine Service",
+            "date": today(),
+            "mileage": 100,
+            "garage": "Garage",
+            "nextServiceMileage": 90,
+        },
+    )
+    assert response.status_code == 422
+    assert store.state == before
