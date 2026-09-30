@@ -347,7 +347,13 @@ def write_resource(state, actor, resource, payload, key=None):
         fail("This resource cannot be edited directly.", 405)
     if resource in {"settings", "categories", "locations"} and actor["role"] != "super_admin":
         fail("Only a super administrator can change company settings and catalogs.", 403)
-    if key and resource in {"assignments", "maintenance", "compliance", "documents"}:
+    if key and resource in {
+        "assignments",
+        "maintenance",
+        "compliance",
+        "documents",
+        "service_jobs",
+    }:
         fail("Create a renewal or use the workflow action for this record.", 405)
     defaults(state)
     old = find(state, resource, key) if key else {}
@@ -412,6 +418,17 @@ def write_resource(state, actor, resource, payload, key=None):
         if data["startDate"] <= today():
             vehicle["mileage"] = data["mileageOut"]
             touch(vehicle)
+    elif resource == "service_jobs":
+        if data["expectedReturnDate"] < data["dateOut"]:
+            fail("Expected return cannot precede the date sent.")
+        data.update(status="Pending", reference="SVC-" + uuid4().hex[:12].upper())
+        data["vehicleSnapshot"] = deepcopy(vehicle)
+        previous = max(
+            (r for r in state["maintenance"].values() if r["vehicleId"] == vehicle["id"]),
+            key=lambda r: (r["date"], r["mileage"]),
+            default=None,
+        )
+        data["lastService"] = deepcopy(previous)
     elif resource == "maintenance":
         if data["date"] > today():
             fail("Completed service cannot be in the future. Use a hold for planned work.")

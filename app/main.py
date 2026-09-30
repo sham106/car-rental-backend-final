@@ -29,7 +29,7 @@ def create_app(
             yield
 
     app = FastAPI(
-        title="Oceane Car Rental API",
+        title="DailyCar API",
         version="1.0.0",
         lifespan=lifespan,
         docs_url="/docs" if settings.app_env != "production" else None,

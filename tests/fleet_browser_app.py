@@ -26,7 +26,7 @@ def upstream(request):
 
 settings=Settings(_env_file=None,app_env='test',supabase_url='https://test.example.com',
     supabase_publishable_key='test-publishable',supabase_secret_key='test-secret',
-    frontend_origin='http://localhost:3002',allowed_origins=['http://localhost:3002'],
+    frontend_origin='http://localhost:3002',allowed_origins=['http://localhost:3002', 'http://localhost:3009'],
     allowed_hosts=['localhost','127.0.0.1'],auth_rate_limit=100)
 app=create_app(settings,transport=httpx.MockTransport(upstream))
 original=app.router.lifespan_context

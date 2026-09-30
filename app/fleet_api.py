@@ -106,6 +106,13 @@ async def update_record(
     )
 
 
+@router.post("/admin/service-jobs/{key}/complete")
+async def complete_service_job(key: str, request: Request, admin: Admin, payload: dict = Body(...)):
+    from .service_jobs import complete_job
+
+    return await transaction(request, lambda s: complete_job(s, actor(admin), key, payload))
+
+
 @router.delete("/admin/records/documents/{key}")
 async def delete_document(key: str, request: Request, admin: Admin):
     def delete(state):

@@ -16,6 +16,7 @@ RESOURCES = (
     "bookings",
     "assignments",
     "maintenance",
+    "service_jobs",
     "compliance",
     "files",
     "documents",

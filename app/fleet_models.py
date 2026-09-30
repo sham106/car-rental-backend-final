@@ -63,6 +63,7 @@ class VehicleInput(Input):
     color: Text = ""
     vin: Text = ""
     engineNumber: Text = ""
+    tyreSize: str = Field(default="", max_length=160)
     category: Name
     dailyRate: Money
     transmission: Literal["Automatic", "Manual"] = "Automatic"
@@ -134,6 +135,23 @@ class MaintenanceInput(Input):
     notes: Text = ""
 
 
+class ServiceJobInput(Input):
+    vehicleId: Name
+    garage: Name
+    dateOut: date
+    expectedReturnDate: date
+    deliveredBy: Name
+    contactNumber: Text = ""
+    requestedWork: Name
+    instructions: Text = ""
+
+
+class ServiceJobCompletion(MaintenanceInput):
+    mechanic: Name
+    collectedBy: Name
+    attachmentIds: list[Name] = Field(default_factory=list, max_length=10)
+
+
 class ComplianceInput(Input):
     vehicleId: Name
     complianceType: Literal["Fitness Certificate", "Insurance", "MVL", "Licence"]
@@ -184,7 +202,7 @@ class DocumentInput(Input):
 
 
 class SettingsInput(Input):
-    companyName: Name = "Oceane Car Rental"
+    companyName: Name = "DailyCar"
     brn: Text = ""
     vatNumber: Text = ""
     phone: Text = ""
@@ -262,6 +280,7 @@ MODELS = {
     "customers": CustomerInput,
     "assignments": AssignmentInput,
     "maintenance": MaintenanceInput,
+    "service_jobs": ServiceJobInput,
     "compliance": ComplianceInput,
     "documents": DocumentInput,
     "settings": SettingsInput,
