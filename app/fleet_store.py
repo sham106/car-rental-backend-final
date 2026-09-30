@@ -54,8 +54,9 @@ class SupabaseStore:
         except httpx.RequestError:
             raise HTTPException(503, "Database temporarily unavailable. Please retry.") from None
         if response.status_code >= 400:
+            error = response.json() if "json" in response.headers.get("content-type", "") else {}
             code = (
-                response.json().get("code")
+                error.get("code")
                 if "json" in response.headers.get("content-type", "")
                 else ""
             )
@@ -63,6 +64,17 @@ class SupabaseStore:
                 raise HTTPException(409, "A conflicting record was saved. Refresh and try again.")
             if code == "23503":
                 raise HTTPException(409, "This record is still referenced by another operation.")
+            if (
+                code == "P0001"
+                and error.get("message") == "Unknown resource"
+                and function == "fleet_commit"
+                and any(change.get("resource") == "service_jobs" for change in data.get("changes", []))
+            ) or (code == "42P01" and "fleet_service_jobs" in error.get("message", "")):
+                raise HTTPException(
+                    503,
+                    "Service jobs are not set up in the database. Run backend migration "
+                    "006_service_jobs.sql in this backend's Supabase project, then retry.",
+                )
             if code in {"PGRST202", "PGRST205", "42P01"}:
                 raise HTTPException(503, "Run backend migration 002_fleet_backend.sql in Supabase.")
             raise HTTPException(503, "Database access unavailable. Check backend configuration.")
