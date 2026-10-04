@@ -579,3 +579,29 @@ async def import_vehicles(request: Request, admin: Admin, payload: dict = Body(.
         return {"importedCount": len(rows)}
 
     return await transaction(request, commit)
+
+
+@router.get("/admin/stock")
+async def stock_overview(request: Request, admin: Admin):
+    from .stock import item_view
+    state = await state_for(request)
+    return {"items": [item_view(state, i) for i in state["stock_items"].values()],
+            "movements": sorted(state["stock_movements"].values(), key=lambda m: m["createdAt"], reverse=True)}
+
+
+@router.post("/admin/stock/items")
+async def create_stock_item(request: Request, admin: Admin, payload: dict = Body(...)):
+    from .stock import save_item
+    return await transaction(request, lambda s: save_item(s, actor(admin), payload))
+
+
+@router.patch("/admin/stock/items/{key}")
+async def edit_stock_item(key: str, request: Request, admin: Admin, payload: dict = Body(...)):
+    from .stock import save_item
+    return await transaction(request, lambda s: save_item(s, actor(admin), payload, key))
+
+
+@router.post("/admin/stock/items/{key}/movements")
+async def record_stock_movement(key: str, request: Request, admin: Admin, payload: dict = Body(...)):
+    from .stock import move_stock
+    return await transaction(request, lambda s: move_stock(s, actor(admin), key, payload))

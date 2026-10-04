@@ -10,6 +10,8 @@ import httpx
 from fastapi import HTTPException
 
 RESOURCES = (
+    "stock_items",
+    "stock_movements",
     "owners",
     "vehicles",
     "customers",
@@ -75,6 +77,9 @@ class SupabaseStore:
                     "Service jobs are not set up in the database. Run backend migration "
                     "006_service_jobs.sql in this backend's Supabase project, then retry.",
                 )
+            if (code == "P0001" and error.get("message") == "Unknown resource"
+                and any(c.get("resource", "").startswith("stock_") for c in data.get("changes", []))):
+                raise HTTPException(503, "Stock management needs migration 007_stock_management.sql. Run it in Supabase SQL Editor.")
             if code in {"PGRST202", "PGRST205", "42P01"}:
                 raise HTTPException(503, "Run backend migration 002_fleet_backend.sql in Supabase.")
             raise HTTPException(503, "Database access unavailable. Check backend configuration.")
