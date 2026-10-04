@@ -1,4 +1,5 @@
 """Inventory ledger: quantities change only through audited, atomic movements."""
+import re
 from decimal import Decimal
 from typing import Annotated, Literal
 from pydantic import Field
@@ -9,7 +10,7 @@ Quantity = Annotated[Decimal, Field(ge=0, le=1_000_000_000, max_digits=13, decim
 
 class ItemInput(Input):
     name: Name
-    sku: Name
+    sku: Annotated[str, Field(max_length=160)] = ""
     category: Text = ""
     unit: Name = "pieces"
     supplier: Text = ""
@@ -46,10 +47,19 @@ def save_item(state, actor, payload, key=None):
     if not key:
         for existing in state["stock_items"].values():
             if existing.get("requestId") == request_id:
-                if existing.get("creatorId") != actor["id"] or any(existing.get(k) != v for k, v in data.items()):
+                if existing.get("creatorId") != actor["id"] or any((existing.get("requestedSku", existing["sku"]) if k == "sku" else existing.get(k)) != v for k, v in data.items()):
                     fail("This request was already used for a different item.", 409)
                 return item_view(state, existing)
+    requested_sku = data["sku"]
     old = find(state, "stock_items", key) if key else None
+    if not data["sku"]:
+        if old:
+            data["sku"] = old["sku"]
+        else:
+            numbers = [int(match.group(1)) for item in state["stock_items"].values()
+                       if (match := re.fullmatch(r"STK-([0-9]{1,12})", item["sku"], re.IGNORECASE))]
+            data["sku"] = f"STK-{max(numbers, default=0) + 1:06d}"
+
     if old and version != old["version"]:
         fail("This item changed. Refresh before editing it.", 409)
     if any(i["id"] != key and i["sku"].casefold() == data["sku"].casefold() for i in state["stock_items"].values()):
@@ -61,7 +71,7 @@ def save_item(state, actor, payload, key=None):
         touch(old)
         row = old
     else:
-        row = new_record(state, "stock_items", {**data, "requestId": request_id, "creatorId": actor["id"]})
+        row = new_record(state, "stock_items", {**data, "requestId": request_id, "creatorId": actor["id"], "requestedSku": requested_sku})
     audit(state, actor, "Updated" if old else "Created", "stock_items", row)
     return item_view(state, row)
 

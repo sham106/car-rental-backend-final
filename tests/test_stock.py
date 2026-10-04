@@ -80,3 +80,37 @@ def test_stock_requires_authentication_and_no_direct_ledger_edit(fleet):
     client.cookies.clear()
     assert client.get("/api/admin/stock").status_code == 401
     assert client.post("/api/admin/stock/items", json={}).status_code == 401
+
+
+def test_generated_sku_is_unique_and_retry_safe(fleet):
+    client, store, _ = fleet
+    item(client, sku="stk-000010")
+    request_id = str(uuid4())
+    first = item(client, sku="   ", requestId=request_id)
+    assert first["sku"] == "STK-000011"
+    assert item(client, sku="", requestId=request_id)["id"] == first["id"]
+    second = post(client, "/admin/stock/items", {"name": "Filter", "requestId": str(uuid4())})
+    assert second["sku"] == "STK-000012"
+    assert len(store.state["stock_items"]) == 3
+    updated = client.patch(f"/api/admin/stock/items/{first['id']}", json={"name": "Engine oil", "sku": "", "unit": "litres", "version": first["version"], "requestId": str(uuid4())})
+    assert updated.status_code == 200
+    assert updated.json()["sku"] == first["sku"]
+
+
+def test_generated_sku_recomputed_after_concurrent_creation(fleet):
+    client, store, _ = fleet
+    original_commit = store.commit
+    first = True
+    async def concurrent_commit(revision, before, after, allocations):
+        nonlocal first
+        if first:
+            first = False
+            from app.stock import save_item
+            save_item(store.state, {"id": "other", "name": "Other admin", "role": "admin"},
+                      {"name": "Other item", "requestId": str(uuid4())})
+            store.revision += 1
+            return False
+        return await original_commit(revision, before, after, allocations)
+    store.commit = concurrent_commit
+    assert item(client, sku="")["sku"] == "STK-000002"
+    assert len({i["sku"] for i in store.state["stock_items"].values()}) == 2

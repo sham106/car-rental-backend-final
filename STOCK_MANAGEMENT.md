@@ -8,7 +8,7 @@
 
 ## Use
 
-Create an item with a unique SKU and its unit, supplier, location, unit cost, description, and low-stock threshold. New items start at zero. Record opening inventory with **Stock in**, reason **Opening stock**. Use **Stock out** for withdrawals; record the recipient or reason and optionally a vehicle, job, or invoice reference. Quantities support three decimal places.
+Create an item with its unit, supplier, location, unit cost, description, and low-stock threshold. Leave SKU blank to generate a unique sequential code such as STK-000001, or enter a custom unique SKU. Leaving SKU blank while editing keeps the current code. New items start at zero. Record opening inventory with **Stock in**, reason **Opening stock**. Use **Stock out** for withdrawals; record the recipient or reason and optionally a vehicle, job, or invoice reference. Quantities support three decimal places.
 
 Remaining stock is total received minus total issued. Zero stock is flagged separately; a positive balance at or below the threshold is low stock. The stock value is an estimate at each item's current unit cost, not an accounting valuation. Totals exclude archived items.
 
