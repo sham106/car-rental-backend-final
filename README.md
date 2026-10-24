@@ -97,3 +97,29 @@ No live Supabase migration or email delivery has been performed by these tests. 
 - Password reset attempts global session revocation after changing the password. If revocation is unavailable, the response reports that the password changed but other sessions could not be signed out. Logout clears local cookies even when the provider cannot be reached.
 
 Supabase references: [Password authentication and recovery](https://supabase.com/docs/guides/auth/passwords), [Auth HTTP API](https://github.com/supabase/auth), [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security).
+
+
+## Fresh test-project reset and administrator invitation
+
+The operator-only script `scripts/reset_test_project.py` reads server credentials from
+`backend/.env`. It is not an HTTP route. `plan` lists record counts without changing data;
+`reset --apply` removes all application records, all Auth users and memberships, and
+all Storage objects while preserving tables, policies and buckets. Reset is multi-step,
+not a single database transaction. Stop application writes during a planned reset;
+on failure inspect the printed last completed phase before resuming. Never rerun reset
+after inviting the replacement administrator unless another complete wipe is intended.
+
+Use `--project-ref` to explicitly identify the project; it must match the configured
+Supabase URL. Run `invite --apply --origin https://YOUR-LIVE-SITE --email ADMIN-EMAIL`
+only after reset completes. Invitation is deliberately separate so email problems do
+not cause another wipe. If email is sent but membership creation fails, repair the
+membership for that existing Auth user rather than resetting the project again.
+
+Before invitations, Supabase Authentication URL Configuration must allow the exact
+`https://YOUR-LIVE-SITE/admin/reset-password` redirect. Use that origin for Render's
+`FRONTEND_ORIGIN` too. Configure a working Supabase email sender/SMTP for delivery.
+Invitations are sent by Supabase, not Gmail. The invited account receives an explicit
+`admin_memberships` super_admin record; public signup and editable user metadata do
+not grant administrator access. The invitation opens the existing password page;
+after setting a password, sign in normally. The login page's Forgot password link
+sends a recovery email to that same password page.
